@@ -4,6 +4,7 @@ import OpenSSL
 import socket
 
 import OpenSSL.SSL
+from mitmproxy.net.tls import make_master_secret_logger
 
 def get_monitoring_config():
     context = OpenSSL.SSL.Context(OpenSSL.SSL.TLSv1_2_METHOD)
@@ -16,6 +17,10 @@ def get_monitoring_config():
     connection = OpenSSL.SSL.Connection(context, socket.socket(socket.AF_INET, socket.SOCK_STREAM))
     connection.connect(('gcs.ppe.monitoring.core.windows.net', 443))
     connection.set_connect_state()
+
+    keylog = os.path.expanduser('~/certs/key.log')
+    secret_logger = make_master_secret_logger(keylog)
+    context.set_keylog_callback(secret_logger)
 
     request = (
         b'GET /api/agent/v2/Test/SkyLink/MonitoringConfiguration/?Namespace=SkyLink&Version=Ver2v0.109&OSType=Linux HTTP/1.1\r\n'
