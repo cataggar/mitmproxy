@@ -328,59 +328,52 @@ class TlsConfig:
                 if os.path.isfile(p):
                     client_cert = p
 
-        # method = net_tls.Method.DTLS_SERVER_METHOD if tls_start.is_dtls else net_tls.Method.TLS_SERVER_METHOD
-        method = SSL.TLSv1_2_METHOD
-        # ssl_ctx = net_tls.create_proxy_server_context(
-        #     method=method,
-        #     min_version=net_tls.Version[ctx.options.tls_version_server_min],
-        #     max_version=net_tls.Version[ctx.options.tls_version_server_max],
-        #     cipher_list=tuple(cipher_list),
-        #     ecdh_curve=ctx.options.tls_ecdh_curve_server,
-        #     verify=verify,
-        #     ca_path=ctx.options.ssl_verify_upstream_trusted_confdir,
-        #     ca_pemfile=ctx.options.ssl_verify_upstream_trusted_ca,
-        #     client_cert=client_cert,
-        #     legacy_server_connect=ctx.options.ssl_insecure,
-        # )
-        ssl_ctx = SSL.Context(method)
-
-        # some hacks
-        ssl_ctx.set_alpn_protos([b'http/1.1'])
-        client_cert = os.path.expanduser('~/certs/gcs.ppe.monitoring.core.windows.net.pem')
-        ssl_ctx.use_privatekey_file(client_cert)
-        ssl_ctx.use_certificate_chain_file(client_cert)
+        ssl_ctx = net_tls.create_proxy_server_context(
+            method=net_tls.Method.DTLS_CLIENT_METHOD
+            if tls_start.is_dtls
+            else net_tls.Method.TLS_CLIENT_METHOD,
+            min_version=net_tls.Version[ctx.options.tls_version_server_min],
+            max_version=net_tls.Version[ctx.options.tls_version_server_max],
+            cipher_list=tuple(cipher_list),
+            ecdh_curve=ctx.options.tls_ecdh_curve_server,
+            verify=verify,
+            ca_path=ctx.options.ssl_verify_upstream_trusted_confdir,
+            ca_pemfile=ctx.options.ssl_verify_upstream_trusted_ca,
+            client_cert=client_cert,
+            legacy_server_connect=ctx.options.ssl_insecure,
+        )
 
         tls_start.ssl_conn = SSL.Connection(ssl_ctx)
-        # if server.sni:
-        #     # We need to set SNI + enable hostname verification.
-        #     assert isinstance(server.sni, str)
-        #     # Manually enable hostname verification on the context object.
-        #     # https://wiki.openssl.org/index.php/Hostname_validation
-        #     param = SSL._lib.SSL_get0_param(tls_start.ssl_conn._ssl)  # type: ignore
-        #     # Matching on the CN is disabled in both Chrome and Firefox, so we disable it, too.
-        #     # https://www.chromestatus.com/feature/4981025180483584
+        if server.sni:
+            # We need to set SNI + enable hostname verification.
+            assert isinstance(server.sni, str)
+            # Manually enable hostname verification on the context object.
+            # https://wiki.openssl.org/index.php/Hostname_validation
+            param = SSL._lib.SSL_get0_param(tls_start.ssl_conn._ssl)  # type: ignore
+            # Matching on the CN is disabled in both Chrome and Firefox, so we disable it, too.
+            # https://www.chromestatus.com/feature/4981025180483584
 
-        #     SSL._lib.X509_VERIFY_PARAM_set_hostflags(param, DEFAULT_HOSTFLAGS)  # type: ignore
+            SSL._lib.X509_VERIFY_PARAM_set_hostflags(param, DEFAULT_HOSTFLAGS)  # type: ignore
 
-        #     try:
-        #         ip: bytes = ipaddress.ip_address(server.sni).packed
-        #     except ValueError:
-        #         host_name = server.sni.encode("idna")
-        #         tls_start.ssl_conn.set_tlsext_host_name(host_name)
-        #         ok = SSL._lib.X509_VERIFY_PARAM_set1_host(  # type: ignore
-        #             param, host_name, len(host_name)
-        #         )  # type: ignore
-        #         SSL._openssl_assert(ok == 1)  # type: ignore
-        #     else:
-        #         # RFC 6066: Literal IPv4 and IPv6 addresses are not permitted in "HostName",
-        #         # so we don't call set_tlsext_host_name.
-        #         ok = SSL._lib.X509_VERIFY_PARAM_set1_ip(param, ip, len(ip))  # type: ignore
-        #         SSL._openssl_assert(ok == 1)  # type: ignore
-        # elif verify is not net_tls.Verify.VERIFY_NONE:
-        #     raise ValueError("Cannot validate certificate hostname without SNI")
+            try:
+                ip: bytes = ipaddress.ip_address(server.sni).packed
+            except ValueError:
+                host_name = server.sni.encode("idna")
+                tls_start.ssl_conn.set_tlsext_host_name(host_name)
+                ok = SSL._lib.X509_VERIFY_PARAM_set1_host(  # type: ignore
+                    param, host_name, len(host_name)
+                )  # type: ignore
+                SSL._openssl_assert(ok == 1)  # type: ignore
+            else:
+                # RFC 6066: Literal IPv4 and IPv6 addresses are not permitted in "HostName",
+                # so we don't call set_tlsext_host_name.
+                ok = SSL._lib.X509_VERIFY_PARAM_set1_ip(param, ip, len(ip))  # type: ignore
+                SSL._openssl_assert(ok == 1)  # type: ignore
+        elif verify is not net_tls.Verify.VERIFY_NONE:
+            raise ValueError("Cannot validate certificate hostname without SNI")
 
-        # if server.alpn_offers:
-        #     tls_start.ssl_conn.set_alpn_protos(server.alpn_offers)
+        if server.alpn_offers:
+            tls_start.ssl_conn.set_alpn_protos(server.alpn_offers)
 
         tls_start.ssl_conn.set_connect_state()
 
