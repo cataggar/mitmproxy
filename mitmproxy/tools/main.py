@@ -166,3 +166,18 @@ def mitmweb(args=None) -> int | None:  # pragma: no cover
 
     run(web.master.WebMaster, cmdline.mitmweb, args)
     return None
+
+# define main function
+# def main():
+#     print("main fn")
+#     mitmproxy()
+
+# https://docs.mitmproxy.org/stable/concepts-options/
+
+args = ["--set", "http2=false",
+        "--set", "client_certs=/Users/cataggar/certs/gcs.ppe.monitoring.core.windows.net.pem",
+        "--set", "tls_version_client_min=TLS1_2",
+        "--set", "tls_version_server_min=TLS1_2",
+        "--set", "proxy_debug=true",
+        ]
+mitmproxy(args)

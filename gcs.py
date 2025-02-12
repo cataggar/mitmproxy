@@ -3,8 +3,11 @@ import os
 import OpenSSL
 import socket
 
+import OpenSSL.SSL
+
 def get_monitoring_config():
     context = OpenSSL.SSL.Context(OpenSSL.SSL.TLSv1_2_METHOD)
+    # context = OpenSSL.SSL.Context(OpenSSL.SSL.TLS_METHOD)
     client_cert = os.path.expanduser('~/certs/gcs.ppe.monitoring.core.windows.net.pem')
     context.use_privatekey_file(client_cert)
     context.use_certificate_chain_file(client_cert)
