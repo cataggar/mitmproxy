@@ -1,3 +1,6 @@
+*.key
+*.pcap
+
 .DS_Store
 MANIFEST
 **/tmp
