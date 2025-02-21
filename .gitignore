@@ -1,5 +1,8 @@
 *.key
 *.pcap
+bin/
+obj/
+.vs/
 
 .DS_Store
 MANIFEST
