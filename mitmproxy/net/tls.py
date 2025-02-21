@@ -25,6 +25,7 @@ except ImportError:
 
 # redeclared here for strict type checking
 class Method(Enum):
+    TLSv1_2_METHOD = SSL.TLSv1_2_METHOD
     TLS_SERVER_METHOD = SSL.TLS_SERVER_METHOD
     TLS_CLIENT_METHOD = SSL.TLS_CLIENT_METHOD
     # Type-pyopenssl does not know about these DTLS constants.
