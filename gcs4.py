@@ -18,21 +18,23 @@ def get_monitoring_config():
     client_cert = os.path.expanduser('~/certs/gcs.ppe.monitoring.core.windows.net.pem')
 
     context = tls.create_proxy_server_context(
-        method=tls.Method.TLSv1_2_METHOD,
-        # min_version=tls.DEFAULT_MIN_VERSION,
-        min_version=tls.DEFAULT_MAX_VERSION,
+        method=tls.Method.TLS_CLIENT_METHOD,
+        # method=tls.Method.TLSv1_2_METHOD,net_tls.Method.TLS_CLIENT_METHOD
+        min_version=tls.DEFAULT_MIN_VERSION,
+        # min_version=tls.DEFAULT_MAX_VERSION,
         max_version=tls.DEFAULT_MAX_VERSION,
-        cipher_list=None,
+        # cipher_list=None,
+        cipher_list=tuple(["TLS_AES_256_GCM_SHA384", "ECDHE-RSA-AES128-SHA"]),
         ecdh_curve=None,
         verify=tls.Verify.VERIFY_NONE,
         ca_path=None,
         ca_pemfile=None,
         client_cert=client_cert,
-        legacy_server_connect=False)
+        legacy_server_connect=True)
     
-    context.use_privatekey_file(client_cert)
-    context.use_certificate_chain_file(client_cert)
-    context.set_alpn_protos([b'http/1.1'])
+    # context.use_privatekey_file(client_cert)
+    # context.use_certificate_chain_file(client_cert)
+    # context.set_alpn_protos([b'http/1.1'])
 
     connection = OpenSSL.SSL.Connection(context, socket.socket(socket.AF_INET, socket.SOCK_STREAM))
     connection.connect(('gcs.ppe.monitoring.core.windows.net', 443))
