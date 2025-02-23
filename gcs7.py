@@ -30,7 +30,7 @@ async def handle_event(http1_server, event):
 
 async def get_monitoring_config():
     pp = pprint.PrettyPrinter(indent=2)
-    client_cert = os.path.expanduser('~/certs/gcs.ppe.monitoring.core.windows.net.pem')
+    # client_cert = os.path.expanduser('~/certs/gcs.ppe.monitoring.core.windows.net.pem')
     # with open(client_cert, "rb") as f:
     #     client_cert_bytes = f.read()
     # cert = certs.Cert.from_pem(client_cert_bytes)
@@ -168,6 +168,14 @@ async def main():
     # Create a proxy context
     pctx = proxy_context.Context(client, opts)
     pctx.server.address = ("gcs.ppe.monitoring.core.windows.net", 443)
+
+    # Set up TlsConfig addon
+    tls_config = tlsconfig.TlsConfig()
+    client_cert = os.path.expanduser('~/certs/gcs.ppe.monitoring.core.windows.net.pem')
+    with taddons.context(tls_config, loadcore=False) as tctx:
+        tctx.configure(tls_config, client_certs=client_cert)
+        tls_start = tls.TlsData(pctx.server, context=pctx)
+        tls_config.tls_start_server(tls_start)
 
     # Create an instance of Http1Server
     http1_server = Http1Server(pctx)

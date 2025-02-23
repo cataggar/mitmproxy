@@ -316,7 +316,7 @@ class Http1Server(Http1Connection):
             buf = bytes(self.buf)
             if buf.strip():
                 yield commands.Log(
-                    f"Client closed connection before completing request headers: {buf!r}"
+                    f"Server Client closed connection before completing request headers: {buf!r}"
                 )
             yield commands.CloseConnection(self.conn)
         else:
