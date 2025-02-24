@@ -8,10 +8,14 @@ from mitmproxy.addons import tlsconfig
 from mitmproxy.proxy import commands, events, context as proxy_context
 from mitmproxy.master import Master
 from mitmproxy.proxy.layers.http._http1 import Http1Server
-from mitmproxy.proxy.layers import tcp
+from mitmproxy.proxy.layers import tcp, http
+from mitmproxy.proxy.tunnel import LayerStack
+from mitmproxy.tcp import TCPFlow
 from mitmproxy.test import taddons
 import pprint
-from mitmproxy.proxy.layers import TCPLayer
+from mitmproxy.proxy.layers import TCPLayer, ServerTLSLayer
+from mitmproxy.http import Request
+from test.mitmproxy.proxy import tutils
 
 async def execute_command(command):
     if isinstance(command, commands.SendData):
@@ -23,8 +27,8 @@ async def execute_command(command):
     else:
         print(f"* Unhandled command: {command}")
 
-async def handle_event(http1_server, event):
-    command_generator = http1_server._handle_event(event)
+async def handle_event(handler, event):
+    command_generator = handler._handle_event(event)
     for command in command_generator:
         await execute_command(command)
 
@@ -172,25 +176,66 @@ async def main():
     # Set up TlsConfig addon
     tls_config = tlsconfig.TlsConfig()
     client_cert = os.path.expanduser('~/certs/gcs.ppe.monitoring.core.windows.net.pem')
-    with taddons.context(tls_config, loadcore=False) as tctx:
+    with taddons.context(tls_config, loadcore=True) as tctx:
         tctx.configure(tls_config, client_certs=client_cert)
-        tls_start = tls.TlsData(pctx.server, context=pctx)
-        tls_config.tls_start_server(tls_start)
+        # tls_start = tls.TlsData(pctx.server, context=pctx)
+        # tls_config.tls_start_server(tls_start)
+
+        # Create an instance of LayerStack
+        stack = LayerStack()
+
+        # Add layers to the stack
+        stack /= tcp.TCPLayer(pctx)
+        stack /= ServerTLSLayer(pctx)
+        stack /= http.HttpLayer(pctx, http.HTTPMode.regular)
+
 
     # Create an instance of Http1Server
-    http1_server = Http1Server(pctx)
+    # http1_server = Http1Server(pctx)
 
     # Handle the Start event
     start_event = events.Start()
-    await handle_event(http1_server, start_event)
+    await handle_event(stack[0], start_event)
+    
+
+
+    # Create an HTTP request
+    # request = Request.make(
+    #     method="GET",
+    #     url="https://gcs.ppe.monitoring.core.windows.net/api/agent/v2/Test/SkyLink/MonitoringConfiguration/?Namespace=SkyLink&Version=Ver2v0.109&OSType=Linux",
+    #     headers={
+    #         "Host": "gcs.ppe.monitoring.core.windows.net"
+    #     }
+    # )
+    # may be http1.assembly_request(request)
 
     # Handle a DataReceived event
-    request_data = b'GET /api/agent/v2/Test/SkyLink/MonitoringConfiguration/?Namespace=SkyLink&Version=Ver2v0.109&OSType=Linux HTTP/1.1\r\n'
-    data_received_event = events.DataReceived(client, request_data)
-    await handle_event(http1_server, data_received_event)
+    request_bytes = b'GET /api/agent/v2/Test/SkyLink/MonitoringConfiguration/?Namespace=SkyLink&Version=Ver2v0.109&OSType=Linux HTTP/1.1\r\n'
+    data_received_event = events.DataReceived(client, request_bytes)
+    await handle_event(stack[0], data_received_event)
+
+
+    # http1_server.send
 
     # Handle a ConnectionClosed event
-    connection_closed_event = events.ConnectionClosed(client)
-    await handle_event(http1_server, connection_closed_event)
+    # connection_closed_event = events.ConnectionClosed(client)
+    # await handle_event(stack[0], connection_closed_event)
+
+    # flow = tutils.Placeholder(TCPFlow)
+    # unset flow.messages
+    # playbook = tutils.Playbook(stack[0])
+    # assert (
+    #     playbook
+    #     >> events.Start()
+    #     << tcp.TcpStartHook(flow)
+    #     << commands.OpenConnection(pctx.server)
+    #     >> tutils.reply(None)
+        # << events.DataReceived(client, request_bytes)
+        # >> tutils.reply_next_layer(http.HttpLayer)
+        # << commands.SendData(pctx.server, request_bytes)
+        # << events.ConnectionClosed(client)
+        # >> tutils.reply(None)
+    # )
+
 
 asyncio.run(main())
