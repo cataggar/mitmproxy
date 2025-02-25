@@ -11,7 +11,7 @@ args = ["--set", "http2=false",
         # "--set", "tls_version_client_min=TLS1_2",
         # "--set", "tls_version_server_min=TLS1_2",
         # "--set", "tls_version_client_max=TLS1_2",
-        # "--set", "tls_version_server_max=TLS1_2",
+        "--set", "tls_version_server_max=TLS1_2",
         # "--set", "proxy_debug=true",
         # "--set", "console_eventlog_verbosity=debug",
         ]

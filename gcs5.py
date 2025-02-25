@@ -1,6 +1,7 @@
 import os
 import socket
 from OpenSSL import SSL
+from mitmproxy.addons.tlsconfig import _DEFAULT_CIPHERS
 from mitmproxy.net import tls
 
 def get_monitoring_config():
@@ -9,14 +10,18 @@ def get_monitoring_config():
     context = tls.create_proxy_server_context(
         method=tls.Method.TLS_CLIENT_METHOD,
         min_version=tls.DEFAULT_MIN_VERSION,
-        max_version=tls.DEFAULT_MAX_VERSION,
-        cipher_list=None,
+        # max_version=tls.DEFAULT_MAX_VERSION,
+        max_version=tls.Version.TLS1_2,
+        # cipher_list=None,
+        cipher_list= _DEFAULT_CIPHERS,
         ecdh_curve=None,
-        verify=tls.Verify.VERIFY_NONE,
+        # verify=tls.Verify.VERIFY_NONE,
+        verify=tls.Verify.VERIFY_PEER,
         ca_path=None,
         ca_pemfile=None,
         client_cert=client_cert,
         legacy_server_connect=True)
+    # context.set_alpn_protos([b'http/1.1'])
     
     connection = SSL.Connection(context, socket.socket(socket.AF_INET, socket.SOCK_STREAM))
     connection.connect(('gcs.ppe.monitoring.core.windows.net', 443))
