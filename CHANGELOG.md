@@ -9,6 +9,14 @@
 
 - Enhance homebrew installation command for Brewfile users.
   ([#7566](https://github.com/mitmproxy/mitmproxy/pull/7566), @AntoineJT)
+- Fix a bug where mitmdump would exit prematurely in server replay mode.
+  ([#7571](https://github.com/mitmproxy/mitmproxy/pull/7571), @mhils)
+- Fix a bug where WebSocket Messages view jumps to top when a message is received
+  ([#7572](https://github.com/mitmproxy/mitmproxy/pull/7572), @DenizenB)
+- Add support for TLS 1.3 Post Handshake Authentication.
+  ([#7576](https://github.com/mitmproxy/mitmproxy/pull/7576), @mhils, @cataggar)
+- Create content view for Socket.IO over WebSocket transport
+  ([#7570](https://github.com/mitmproxy/mitmproxy/pull/7570), @DenizenB)
 
 ## 17 February 2025: mitmproxy 11.1.3
 
