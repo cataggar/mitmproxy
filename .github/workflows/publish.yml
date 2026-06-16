@@ -16,15 +16,15 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: mirror
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v8
 
       - name: Download mitmproxy assets
         run: uv run scripts/download_assets.py "${{ inputs.version }}"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: mitmproxy-assets
           path: dist/
@@ -36,7 +36,7 @@ jobs:
     permissions:
       contents: write # Needed to create releases
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: mitmproxy-assets
           path: dist/
