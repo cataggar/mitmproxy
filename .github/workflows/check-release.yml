@@ -1,0 +1,47 @@
+name: Check for new mitmproxy release
+
+on:
+  workflow_dispatch: {} # Manual triggers only (no schedule for now)
+
+permissions: {}
+
+jobs:
+  check-and-tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to push tags
+      actions: write # Needed to trigger the publish workflow
+    outputs:
+      new_version: ${{ steps.check.outputs.new_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: mirror
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Check for new release
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: uv run scripts/check_mitmproxy_release.py
+
+      - name: Create and push tag
+        if: steps.check.outputs.new_version != ''
+        env:
+          NEW_VERSION: ${{ steps.check.outputs.new_version }}
+        run: |
+          tag="v${NEW_VERSION}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          echo "Creating tag ${tag}"
+          git tag "${tag}"
+          git push origin "${tag}"
+
+      - name: Trigger publish workflow
+        if: steps.check.outputs.new_version != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_VERSION: ${{ steps.check.outputs.new_version }}
+        run: |
+          echo "Triggering publish for ${NEW_VERSION}"
+          gh workflow run publish.yml --ref mirror -f version="${NEW_VERSION}"

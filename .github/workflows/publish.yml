@@ -1,0 +1,77 @@
+name: Publish mitmproxy Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "mitmproxy version to mirror (e.g. 12.2.3)"
+        required: true
+        default: "12.2.3"
+
+permissions: {}
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: mirror
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Download mitmproxy assets
+        run: uv run scripts/download_assets.py "${{ inputs.version }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mitmproxy-assets
+          path: dist/
+          retention-days: 1
+
+  release:
+    needs: download
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to create releases
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: mitmproxy-assets
+          path: dist/
+
+      - name: List assets
+        run: ls -lh dist/
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          VERSION="${VERSION#v}"
+          TAG="v${VERSION}"
+          TITLE="mitmproxy ${VERSION}"
+
+          # Stable mitmproxy releases are X.Y.Z; anything else is a pre-release.
+          if [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            PRERELEASE=""
+          else
+            PRERELEASE="--prerelease"
+          fi
+
+          NOTES="Official mitmproxy ${VERSION} binaries, mirrored unchanged from <https://downloads.mitmproxy.org/${VERSION}/>.
+
+          Each artifact is covered by mitmproxy's build-provenance attestation, included here as \`mitmproxy-${VERSION}.sigstore\`. Verify any download with the [gh CLI](https://cli.github.com/):
+
+          \`\`\`
+          gh attestation verify mitmproxy-${VERSION}-linux-x86_64.tar.gz \\
+            --bundle mitmproxy-${VERSION}.sigstore --repo mitmproxy/mitmproxy
+          \`\`\`"
+
+          gh release create "${TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "${TITLE}" \
+            --notes "${NOTES}" \
+            ${PRERELEASE} \
+            dist/*
