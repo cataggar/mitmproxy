@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: mirror
-      - uses: astral-sh/setup-uv@v8
+      - uses: astral-sh/setup-uv@v8.2.0
 
       - name: Download mitmproxy assets
         run: uv run scripts/download_assets.py "${{ inputs.version }}"
