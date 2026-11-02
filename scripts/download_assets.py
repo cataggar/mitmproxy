@@ -37,6 +37,15 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 log = logging.getLogger(__name__)
 
 
+def should_skip_asset(version: str, name: str) -> bool:
+    """Return True for upstream assets we do not mirror (installers, wheels, source sdist)."""
+    return (
+        name.endswith("-installer.exe")
+        or name.endswith(".whl")
+        or name == f"mitmproxy-{version}.tar.gz"
+    )
+
+
 def list_assets(version: str) -> list[str]:
     """Return the asset keys (filenames) published for ``version``."""
     resp = requests.get(
@@ -51,7 +60,7 @@ def list_assets(version: str) -> list[str]:
         if key_el is None or not key_el.text:
             continue
         name = key_el.text[len(prefix):] if key_el.text.startswith(prefix) else key_el.text
-        if name:
+        if name and not should_skip_asset(version, name):
             keys.append(name)
     return sorted(keys)
 
