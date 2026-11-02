@@ -1,7 +1,9 @@
 name: Check for new mitmproxy release
 
 on:
-  workflow_dispatch: {} # Manual triggers only (no schedule for now)
+  schedule:
+    - cron: "0 8 * * *" # Daily at 08:00 UTC
+  workflow_dispatch: {} # Allow manual triggers
 
 permissions: {}
 

@@ -41,6 +41,6 @@ published.
 verifies each one against the provenance bundle, and creates a `v<version>`
 GitHub Release.
 
-The **Check for new mitmproxy release** workflow (manual trigger) finds the
-latest published version and, if it is not yet mirrored, tags it and dispatches
-the publish workflow.
+The **Check for new mitmproxy release** workflow (scheduled daily and manual
+trigger) finds the latest published version and, if it is not yet mirrored,
+tags it and dispatches the publish workflow.
